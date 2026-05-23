@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDCP Access & Equity Dashboard | Aayushi Sawant</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --navy: #0d1b2a;
+    --teal: #1b998b;
+    --teal-light: #c8f0eb;
+    --gold: #e9c46a;
+    --coral: #e76f51;
+    --slate: #3a5a6b;
+    --off-white: #f7f4ef;
+    --muted: #8a9ab5;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--navy);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: var(--navy);
+    color: white;
+    padding: 48px 5% 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: var(--teal);
+    opacity: 0.08;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 30%;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: var(--gold);
+    opacity: 0.06;
+  }
+  .header-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 12px;
+  }
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.15;
+    color: white;
+    max-width: 640px;
+    margin-bottom: 14px;
+  }
+  .header h1 em { color: var(--gold); font-style: italic; }
+  .header-meta {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .header-meta span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); display: inline-block; }
+
+  /* Main layout */
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 5%; }
+
+  /* Key metrics row */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .metric-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: var(--teal);
+  }
+  .metric-card.gold::before { background: var(--gold); }
+  .metric-card.coral::before { background: var(--coral); }
+  .metric-card.slate::before { background: var(--slate); }
+  .metric-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .metric-val { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--navy); line-height: 1; margin-bottom: 4px; }
+  .metric-sub { font-size: 12px; color: var(--muted); }
+  .metric-change { font-size: 12px; color: var(--teal); font-weight: 500; margin-top: 4px; }
+
+  /* Chart grid */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .chart-card.wide { grid-column: 1 / -1; }
+  .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .chart-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  canvas { max-height: 280px; }
+
+  /* Insight cards */
+  .insights-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .insight-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .insight-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .ic-teal { background: var(--teal-light); }
+  .ic-gold { background: #fdf3d7; }
+  .ic-coral { background: #fde9e4; }
+  .insight-title { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+  .insight-text { font-size: 12px; color: #4a5568; line-height: 1.6; }
+
+  /* Table */
+  .table-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-top: 20px;
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: var(--navy); }
+  tbody tr:last-child td { border-bottom: none; }
+  .bar-cell { display: flex; align-items: center; gap: 10px; }
+  .mini-bar-bg { flex: 1; height: 6px; background: #eef2f7; border-radius: 3px; overflow: hidden; }
+  .mini-bar { height: 100%; background: var(--teal); border-radius: 3px; transition: width .6s ease; }
+  .mini-bar.low { background: var(--coral); }
+  .rate-val { font-weight: 500; min-width: 36px; text-align: right; }
+
+  /* Footer */
+  .footer {
+    margin-top: 40px;
+    padding: 24px 5%;
+    background: var(--navy);
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer a { color: var(--teal); text-decoration: none; }
+  .author { color: white; font-weight: 500; }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 16px;
+    margin-top: 36px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Health Informatics · Canada Dental Policy Analysis</div>
+  <h1>Canadian Dental Care Plan:<br><em>Access & Equity</em> Dashboard</h1>
+  <div class="header-meta">
+    <span><span class="dot"></span> Data: Health Canada Open Data (Feb 2026)</span>
+    <span><span class="dot"></span> Aayushi Sawant, BDS + PGC Health Informatics</span>
+    <span><span class="dot"></span> George Brown College · U of T Research Collaborator</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- KEY METRICS -->
+  <div class="section-label">National snapshot — benefit year 2024–25</div>
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Total approved</div>
+      <div class="metric-val">6.4M</div>
+      <div class="metric-sub">Canadians approved CDCP</div>
+      <div class="metric-change">↑ from 3.4M in Mar 2025</div>
+    </div>
+    <div class="metric-card gold">
+      <div class="metric-label">Received care</div>
+      <div class="metric-val">2.8M</div>
+      <div class="metric-sub">Unique members served</div>
+      <div class="metric-change">44% utilization rate</div>
+    </div>
+    <div class="metric-card coral">
+      <div class="metric-label">Avg. savings</div>
+      <div class="metric-val">$900</div>
+      <div class="metric-sub">Per member (2024–25)</div>
+      <div class="metric-change">Up from $730 at launch</div>
+    </div>
+    <div class="metric-card slate">
+      <div class="metric-label">Providers</div>
+      <div class="metric-val">23.5K</div>
+      <div class="metric-sub">Oral health providers</div>
+      <div class="metric-change">&gt;90% of registered dentists</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="section-label">Provincial distribution analysis</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Approved applicants by province</div>
+      <div class="chart-sub">Total CDCP coverage — Feb 2026 snapshot</div>
+      <canvas id="provinceBar"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Care utilization rate by province</div>
+      <div class="chart-sub">% of approved members who received care (2024–25)</div>
+      <canvas id="utilizationBar"></canvas>
+    </div>
+  </div>
+
+  <!-- CHART ROW 2 -->
+  <div class="chart-grid">
+    <div class="chart-card wide">
+      <div class="chart-title">CDCP rollout timeline — approved vs. received care</div>
+      <div class="chart-sub">Program growth May 2024 → Feb 2026 (millions of Canadians)</div>
+      <canvas id="timelineChart"></canvas>
+    </div>
+  </div>
+
+  <!-- EQUITY TABLE -->
+  <div class="section-label">Equity gap analysis — utilization vs. approval</div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Province/Territory</th>
+          <th>Approved (2024–25)</th>
+          <th>Received care</th>
+          <th>Utilization rate</th>
+          <th>Equity indicator</th>
+        </tr>
+      </thead>
+      <tbody id="equityTable"></tbody>
+    </table>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="section-label">Clinical informatics insights</div>
+  <div class="insights-row">
+    <div class="insight-card">
+      <div class="insight-icon ic-teal">🦷</div>
+      <div>
+        <div class="insight-title">Ontario carries disproportionate load</div>
+        <div class="insight-text">Ontario holds 41% of all approved applicants (2.63M) yet its utilization rate (~31%) lags BC (~33%), suggesting EMR workflow and provider capacity gaps in high-density urban centres. Digital intake optimization at dental clinics could close this gap.</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon ic-gold">📊</div>
+      <div>
+        <div class="insight-title">Atlantic provinces show highest relative uptake</div>
+        <div class="insight-text">NS, NB, NL show utilization rates 30–33%, comparable to BC despite smaller provider networks. Suggests these populations had higher unmet need — consistent with rural oral health access literature and baseline CDCP targets.</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon ic-coral">⚠️</div>
+      <div>
+        <div class="insight-title">56% of approved members have not yet received care</div>
+        <div class="insight-text">With 6.4M approved and only 2.8M served, a 3.6M gap remains. Key barriers documented in JCDA research include provider capacity, preauthorization complexity, and patient-side awareness — all addressable through digital health interventions and EMR optimization.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <div>
+    Data sources: <a href="https://www.canada.ca/en/services/benefits/dental/dental-care-plan/statistics.html">Health Canada CDCP Statistics (Feb 2026)</a> ·
+    <a href="https://jcda.ca/p15">JCDA Initial Findings 2025</a> ·
+    <a href="https://www.canada.ca/en/health-canada/corporate/transparency/corporate-management-reporting/departmental-performance-reports/2024-2025-departmental-results-report.html">Health Canada Departmental Report 2024–25</a>
+  </div>
+  <div>Created by <span class="author">Aayushi Sawant</span> · BDS + PGC Health Informatics, George Brown College</div>
+</div>
+
+<script>
+// ── DATA (sourced from Health Canada open data, Feb 2026) ──────────────────
+const provinces = ['ON', 'QC', 'BC', 'AB', 'NS', 'MB', 'NB', 'SK', 'NL', 'PEI'];
+const approved  = [2630312, 1795197, 837361, 447459, 163318, 168479, 118088, 105955, 104522, 21867];
+const received  = [822830,  646097,  277489, 102060, 55915,  56479,  37547,  34111,  34231,  6978];
+
+const utilRate = provinces.map((_, i) => +(received[i] / approved[i] * 100).toFixed(1));
+
+// Timeline data (from press releases — millions)
+const timelineLabels = ['May 2024','Aug 2024','Sep 2024','Oct 2024','Dec 2024','Mar 2025','May 2025','Oct 2025','Feb 2026'];
+const timelineApproved = [2.0, 2.3, 2.4, 2.7, 3.0, 3.4, 4.0, 5.0, 6.4];
+const timelineReceived = [0.15, 0.45, 0.65, 1.0, 1.3, 1.7, 2.0, 2.5, 2.8];
+
+// ── CHART HELPERS ──────────────────────────────────────────────────────────
+const teal   = '#1b998b';
+const tealA  = 'rgba(27,153,139,0.15)';
+const gold   = '#e9c46a';
+const goldA  = 'rgba(233,196,106,0.15)';
+const coral  = '#e76f51';
+const navy   = '#0d1b2a';
+
+// Sort by approved desc for bar chart
+const sortedIdx = [...Array(provinces.length).keys()].sort((a,b) => approved[b]-approved[a]);
+const sortedProvinces = sortedIdx.map(i=>provinces[i]);
+const sortedApproved  = sortedIdx.map(i=>approved[i]);
+
+// Province bar
+new Chart(document.getElementById('provinceBar'), {
+  type: 'bar',
+  data: {
+    labels: sortedProvinces,
+    datasets: [{
+      label: 'Approved applicants',
+      data: sortedApproved,
+      backgroundColor: sortedProvinces.map((p,i)=> i===0 ? teal : i===1 ? gold : 'rgba(27,153,139,0.4)'),
+      borderRadius: 5,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ' ' + ctx.raw.toLocaleString() + ' applicants' } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#8a9ab5' } },
+      y: { grid: { color: '#f1f5f9' },
+           ticks: { font: { size: 11 }, color: '#8a9ab5', callback: v => (v/1e6).toFixed(1)+'M' } }
+    }
+  }
+});
+
+// Utilization bar — sorted by rate
+const utilSortedIdx = [...Array(provinces.length).keys()].sort((a,b)=>utilRate[b]-utilRate[a]);
+const utilSortedProv = utilSortedIdx.map(i=>provinces[i]);
+const utilSortedRate = utilSortedIdx.map(i=>utilRate[i]);
+
+new Chart(document.getElementById('utilizationBar'), {
+  type: 'bar',
+  data: {
+    labels: utilSortedProv,
+    datasets: [{
+      label: 'Utilization %',
+      data: utilSortedRate,
+      backgroundColor: utilSortedRate.map(r => r >= 32 ? teal : r >= 30 ? gold : coral),
+      borderRadius: 5,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + '% utilization' } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#8a9ab5' } },
+      y: { grid: { color: '#f1f5f9' }, min: 25, max: 40,
+           ticks: { font: { size: 11 }, color: '#8a9ab5', callback: v => v+'%' } }
+    }
+  }
+});
+
+// Timeline chart
+new Chart(document.getElementById('timelineChart'), {
+  type: 'line',
+  data: {
+    labels: timelineLabels,
+    datasets: [
+      {
+        label: 'Approved applicants (M)',
+        data: timelineApproved,
+        borderColor: teal,
+        backgroundColor: tealA,
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: teal
+      },
+      {
+        label: 'Received care (M)',
+        data: timelineReceived,
+        borderColor: gold,
+        backgroundColor: goldA,
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: gold,
+        borderDash: [4, 3]
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 12 }, color: navy, usePointStyle: true, pointStyleWidth: 10 } },
+      tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.raw + 'M' } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#8a9ab5' } },
+      y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, color: '#8a9ab5', callback: v => v+'M' } }
+    }
+  }
+});
+
+// Equity table
+const tableBody = document.getElementById('equityTable');
+const tableData = sortedIdx.map(i => ({
+  prov: provinces[i],
+  approved: approved[i],
+  received: received[i],
+  rate: utilRate[i]
+}));
+
+const maxRate = Math.max(...tableData.map(d=>d.rate));
+
+tableData.forEach(row => {
+  const rateNorm = row.rate / maxRate * 100;
+  const isLow = row.rate < 30;
+  const equity = row.rate >= 33 ? '✅ Above avg' : row.rate >= 30 ? '🟡 On track' : '⚠️ Below avg';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><strong>${row.prov}</strong></td>
+    <td>${row.approved.toLocaleString()}</td>
+    <td>${row.received.toLocaleString()}</td>
+    <td>
+      <div class="bar-cell">
+        <div class="mini-bar-bg"><div class="mini-bar ${isLow?'low':''}" style="width:${rateNorm}%"></div></div>
+        <span class="rate-val">${row.rate}%</span>
+      </div>
+    </td>
+    <td>${equity}</td>
+  `;
+  tableBody.appendChild(tr);
+});
+</script>
+</body>
+</html>
